@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ku">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shadow AI</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#fff;font-family:Arial,sans-serif;height:100vh;display:flex;flex-direction:column}
+.header{background:#000;padding:15px;text-align:center;border-bottom:1px solid #222}
+.header h1{color:#fff;font-size:20px}
+.header p{color:#666;font-size:12px}
+.chat-box{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:15px}
+.message{max-width:85%;padding:12px 16px;border-radius:15px;line-height:1.6;font-size:15px}
+.user-message{background:#1a1a1a;align-self:flex-end;border-radius:15px 15px 0 15px;border:1px solid #333}
+.ai-message{background:#000;align-self:flex-start;border-radius:15px 15px 15px 0;border:1px solid #222}
+.input-area{padding:15px;background:#000;border-top:1px solid #222;display:flex;gap:10px;align-items:center}
+input{flex:1;background:#111;border:1px solid #333;color:#fff;padding:12px;border-radius:25px;font-size:15px;outline:none}
+input:focus{border-color:#555}
+.send-btn{background:#fff;color:#000;border:none;padding:12px 20px;border-radius:25px;cursor:pointer;font-size:15px;font-weight:bold}
+.send-btn:hover{background:#ddd}
+.img-btn{background:#111;color:#fff;border:1px solid #333;padding:12px;border-radius:25px;cursor:pointer;font-size:18px}
+.typing{color:#666;font-size:13px;padding:5px 20px}
+.clear-btn{background:none;color:#666;border:none;cursor:pointer;font-size:12px;padding:5px 10px}
+.top-bar{display:flex;justify-content:flex-end;padding:5px 15px;background:#000;border-bottom:1px solid #111}
+img.preview{max-width:200px;border-radius:10px;margin-bottom:5px}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>Shadow AI 🌑</h1>
+<p>یاریدەدەری زیرەکی دەستکردی کوردی</p>
+</div>
+<div class="top-bar">
+<button class="clear-btn" onclick="clearChat()">🗑️ سڕینەوەی گفتوگۆ</button>
+</div>
+<div class="chat-box" id="chatBox">
+<div class="message ai-message">سڵاو! 👋 من Shadow AI یم. چۆن یارمەتیت بدەم؟</div>
+</div>
+<div class="typing" id="typing" style="display:none">Shadow AI دەنووسێت...</div>
+<div class="input-area">
+<button class="img-btn" onclick="document.getElementById('imgInput').click()">🖼️</button>
+<input type="file" id="imgInput" accept="image/*" style="display:none" onchange="handleImage(this)">
+<input type="text" id="userInput" placeholder="پەیامەکەت بنووسە..." onkeypress="if(event.key==='Enter')sendMessage()">
+<button class="send-btn" onclick="sendMessage()">↑</button>
+</div>
+<script>
+let currentImage=null;
+function handleImage(input){
+const file=input.files[0];
+if(!file)return;
+const reader=new FileReader();
+reader.onload=function(e){
+currentImage=e.target.result;
+addMessage("🖼️ وێنە هەڵگیراو","user");
+};
+reader.readAsDataURL(file);
+}
+async function sendMessage(){
+const input=document.getElementById("userInput");
+const message=input.value.trim();
+if(!message&&!currentImage)return;
+if(message)addMessage(message,"user");
+input.value="";
+document.getElementById("typing").style.display="block";
+try{
+const response=await fetch("/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:message,image:currentImage})});
+const data=await response.json();
+document.getElementById("typing").style.display="none";
+addMessage(data.response,"ai");
+currentImage=null;
+}catch(e){
+document.getElementById("typing").style.display="none";
+addMessage("هەڵەیەک ڕووی دا!","ai");
+}
+}
+function addMessage(text,sender){
+const chatBox=document.getElementById("chatBox");
+const div=document.createElement("div");
+div.className=`message ${sender}-message`;
+div.textContent=text;
+chatBox.appendChild(div);
+chatBox.scrollTop=chatBox.scrollHeight;
+}
+async function clearChat(){
+await fetch("/clear",{method:"POST"});
+const chatBox=document.getElementById("chatBox");
+chatBox.innerHTML='<div class="message ai-message">سڵاو! 👋 من Shadow AI یم. چۆن یارمەتیت بدەم؟</div>';
+}
+</script>
+</body>
+</html>
